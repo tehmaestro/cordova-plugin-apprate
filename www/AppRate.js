@@ -18,16 +18,14 @@
   * under the License.
   *
   */;
-var AppRate, Locales, localeObj, exec, Storage;
+var AppRate, Locales, localeObj, exec;
 
 Locales = require('./locales');
 
 exec = require('cordova/exec');
 
-Storage = require('./storage')
-
 AppRate = (function() {
-  var FLAG_NATIVE_CODE_SUPPORTED, LOCAL_STORAGE_COUNTER, PREF_STORE_URL_FORMAT_IOS, counter, getAppTitle, getAppVersion, promptForRatingWindowButtonClickHandler, showDialog, updateCounter;
+  var FLAG_NATIVE_CODE_SUPPORTED, LOCAL_STORAGE_COUNTER, PREF_STORE_URL_FORMAT_IOS, counter, getAppTitle, getAppVersion, localStorageParam, promptForRatingWindowButtonClickHandler, showDialog, updateCounter;
 
   function AppRate() {}
 
@@ -128,7 +126,7 @@ AppRate = (function() {
       case 'stop':
         counter.countdown = AppRate.preferences.usesUntilPrompt + 1;
     }
-    Storage.set(LOCAL_STORAGE_COUNTER, counter);
+    localStorageParam(LOCAL_STORAGE_COUNTER, JSON.stringify(counter));
     return counter;
   };
 
@@ -140,8 +138,8 @@ AppRate = (function() {
     iOSRating.timesPrompted++;
     iOSRating.lastPromptDate = new Date();
 
-    Storage.set(LOCAL_STORAGE_IOS_RATING, iOSRating);
-  };
+    localStorageParam(LOCAL_STORAGE_IOS_RATING, JSON.stringify(iOSRating));
+  }
 
   showDialog = function(immediately) {
     updateCounter();
@@ -160,6 +158,28 @@ AppRate = (function() {
       }
     }
     return AppRate;
+  };
+
+  localStorageParam = function(itemName, itemValue, action) {
+    if (itemValue == null) {
+      itemValue = null;
+    }
+    if (action == null) {
+      action = false;
+    }
+    if (itemValue !== null) {
+      action = true;
+    }
+    switch (action) {
+      case true:
+        localStorage.setItem(itemName, itemValue);
+        break;
+      case false:
+        return localStorage.getItem(itemName);
+      case null:
+        localStorage.removeItem(itemName);
+    }
+    return this;
   };
 
   getAppVersion = function(successCallback, errorCallback) {
@@ -181,18 +201,17 @@ AppRate = (function() {
   };
 
   AppRate.init = function() {
-    AppRate.ready = Promise.all([
-      Storage.get(LOCAL_STORAGE_COUNTER).then(function (storedCounter) {
-        counter = storedCounter || counter
-      }),
-      Storage.get(LOCAL_STORAGE_IOS_RATING).then(function (storedRating) {
-        iOSRating = storedRating || iOSRating
+    if(localStorageParam(LOCAL_STORAGE_COUNTER)){
+      counter = JSON.parse(localStorageParam(LOCAL_STORAGE_COUNTER)) || counter;
+    }
 
-        if (iOSRating.lastPromptDate) {
-          iOSRating.lastPromptDate = new Date(iOSRating.lastPromptDate);
-        }
-      })
-    ])
+    if (localStorageParam(LOCAL_STORAGE_IOS_RATING)){
+      iOSRating = JSON.parse(localStorageParam(LOCAL_STORAGE_IOS_RATING)) || iOSRating;
+
+      if (iOSRating.lastPromptDate) {
+        iOSRating.lastPromptDate = new Date(iOSRating.lastPromptDate);
+      }
+    }
 
     getAppVersion((function(_this) {
       return function(applicationVersion) {
@@ -240,18 +259,15 @@ AppRate = (function() {
   };
 
   AppRate.promptForRating = function(immediately) {
-    AppRate.ready.then(function() {
-      if (immediately == null) {
-        immediately = true;
-      }
-
+    if (immediately == null) {
+      immediately = true;
+    }
       // see also: https://cordova.apache.org/news/2017/11/20/migrate-from-cordova-globalization-plugin.html
       if (AppRate.preferences.useLanguage === null && window.Intl && typeof window.Intl === 'object') {
         AppRate.preferences.useLanguage = window.navigator.language;
       }
 
-      showDialog(immediately);
-    });
+    showDialog(immediately);
     return this;
   };
 

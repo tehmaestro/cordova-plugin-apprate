@@ -35,7 +35,6 @@ under the License.
 
     <dependency id="cordova-plugin-dialogs"/>
     <dependency id="cordova-plugin-inappbrowser"/>
-    <dependency id="cordova-plugin-nativestorage"/>
 
     <js-module src="www/AppRate.js" name="AppRate">
         <clobbers target="AppRate"/>
@@ -43,10 +42,6 @@ under the License.
 
     <js-module src="www/locales.js" name="locales">
         <runs target="AppRateLocales"/>
-    </js-module>
-
-    <js-module src="www/storage.js" name="storage">
-        <runs target="AppRateStorage"/>
     </js-module>
 
     <platform name="android">
